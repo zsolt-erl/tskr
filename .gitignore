@@ -1,4 +1,5 @@
 /_build
 /deps
+/viz/*
 erl_crash.dump
 *.ez
