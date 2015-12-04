@@ -11,6 +11,11 @@ defmodule Tskr.Scheduler do
     GenServer.start_link(__MODULE__, args, opts)
   end
 
+  def runner_done do
+    GenServer.call(__MODULE__, :runner_done)
+  end
+
+
   ##############################
   # server callbacks
   ##############################
@@ -23,58 +28,35 @@ defmodule Tskr.Scheduler do
   end
 
 
+  def handle_call(:runner_done, {worker_pid, _tag}, state) do
+    :poolboy.checkin(:runner_pool, worker_pid)
+    {:reply, :ok, state, 5000}
+  end
+
   def handle_call(any, _from, state) do
     :io.format "scheduler got call: ~p~n", [any]
     {:reply, :ok, state, 5000}
   end
 
 
-  #def handle_info(any, state) do
-    #  {:noreply, state, 5000}
-    #end
-
   def handle_info(:timeout, state) do
-    #Logger.info "got :timeout"
+    {pb_state, pb_workers, pb_overflow, pb_monitors} = :poolboy.status :runner_pool
 
-    # get an executable task from store
-    case Tskr.Store.get_task do
-
+    # get executable tasks for idle workers
+    case Tskr.Store.get_n_tasks(pb_workers) do
       nil -> 
-      #Logger.info "Can't execute any tasks"
+        Logger.info "Can't execute any tasks"
         :ok
-      
-      {:ok, :stop} ->
-        {:stop, taskstate} = :digraph.vertex state.graph, :stop
-
-        if not (Map.has_key?(taskstate, :executed) and taskstate.executed) do
-          # this was not executed yet
-          # need to execute it
-          Logger.info "Started Task: :stop"
-          new_tasktate = %{taskstate| :executed => true}
-          update_executed = %{op: :update_task, name: :stop, new_state: new_tasktate}
-          graph_updates = (taskstate.code).run state.graph, :stop
-          Logger.info "Finished Task: :stop | results: #{inspect graph_updates}"
-
-          Tskr.Store.update( [update_executed] ++ graph_updates )
-          Tskr.Viz.write state.graph
+      {:ok, tasknames} ->
+        Logger.info "Got executable tasks: #{inspect tasknames}"
+        for taskname <- tasknames do
+          worker_pid = :poolboy.checkout :runner_pool
+          Tskr.Runner.run(worker_pid, state.graph, taskname)
         end
-
-      {:ok, taskname} ->
-        Logger.info "Started Task: #{inspect taskname}"
-    
-        {^taskname, taskstate} = :digraph.vertex state.graph, taskname
-
-        graph_updates = (taskstate.code).run state.graph, taskname
-        Logger.info "Finished Task: #{inspect taskname} | results: #{inspect graph_updates}"
-        Tskr.Store.update(graph_updates)
-        Tskr.Viz.write state.graph
-        # pick an idle executer (who starts the executers?)
-        # send work to executer
-        :ok
-
     end
 
     {:noreply, state, 5000}
   end
+
 end
 

@@ -32,6 +32,16 @@ defmodule Tskr.Store do
     GenServer.call __MODULE__, :get_task
   end
 
+
+  @doc """
+  returns a list of max. N executable tasks
+  (an executable task has all inputs ready and no valid output yet)
+  """
+  def get_n_tasks(n) do
+    GenServer.call __MODULE__, {:get_n_tasks, n}
+  end
+
+
   
   @doc """
   process updates to graph
@@ -89,6 +99,17 @@ defmodule Tskr.Store do
     end
   end
 
+
+  ###################################
+  # GET N TASKS
+  ###################################
+  def handle_call({:get_n_tasks, n}, _from, state) do
+    Logger.info "#{__MODULE__} getting #{n} tasks"
+    nodes = :digraph.vertices state.graph
+    {:reply, find_n_executables(nodes, [], n, state), state}
+  end
+
+
   ###################################
   # UPDATE
   ###################################
@@ -114,9 +135,12 @@ defmodule Tskr.Store do
             :digraph.add_edge state.graph, edgename, source, target, edgestate
 
           %{op: :update_edge, name: edgename, new_state: new_edgestate} ->
-            Logger.info "update_edge in progress"
             {^edgename, source, target, edgestate} = :digraph.edge state.graph, edgename
             :digraph.add_edge state.graph, edgename, source, target, new_edgestate
+
+          %{op: :update_task, name: taskname, new_state: new_taskstate} ->
+            {^taskname, taskstate} = :digraph.vertex state.graph, taskname
+            :digraph.add_vertex state.graph, taskname, new_taskstate
 
           _ -> 
             :unknown_op
@@ -138,7 +162,7 @@ defmodule Tskr.Store do
     # input for task is only valid if all input edges are valid (or there's no input)
     input_valid = Enum.reduce(:digraph.in_edges(state.graph, tasksH), true, fn(edgename, acc) ->
       {^edgename, _start, _end, edgelabel} = :digraph.edge state.graph, edgename
-      Logger.info ">>> in edge #{inspect edgename} state: #{inspect edgelabel}"
+      Logger.debug ">>> in edge #{inspect edgename} state: #{inspect edgelabel}"
       acc and edgelabel.valid
     end)
 
@@ -146,16 +170,47 @@ defmodule Tskr.Store do
     output_exists = Enum.reduce(:digraph.out_edges(state.graph, tasksH), false, fn(edgename, acc) ->
       # {edgename, _start, _end, edgelabel} = :digraph.edge state.graph, edgename
       {^edgename, _start, _end, edgelabel} = :digraph.edge state.graph, edgename
-      Logger.info ">>> out edge #{inspect edgename} state: #{inspect edgelabel}"
+      Logger.debug ">>> out edge #{inspect edgename} state: #{inspect edgelabel}"
       acc or edgelabel.valid
     end)
     
     executable = input_valid and (not output_exists)
-    Logger.info ">>> task: #{inspect tasksH} executable: #{executable} input_valid: #{input_valid} output exists: #{output_exists}"
+    Logger.debug ">>> task: #{inspect tasksH} executable: #{executable} input_valid: #{input_valid} output exists: #{output_exists}"
     if executable do
       tasksH
     else
       find_executable tasksT, state
+    end
+  end
+
+
+  # find max N executable tasks
+  defp find_n_executables([], [], _n, state), do: nil
+  defp find_n_executables([], executables, _n, state), do: {:ok, executables}
+  defp find_n_executables(tasks, executables, 0, state), do: {:ok, executables}
+
+  defp find_n_executables([tasksH|tasksT], executables, n, state) do
+    # input for task is only valid if all input edges are valid (or there's no input)
+    input_valid = Enum.reduce(:digraph.in_edges(state.graph, tasksH), true, fn(edgename, acc) ->
+      {^edgename, _start, _end, edgelabel} = :digraph.edge state.graph, edgename
+      Logger.debug ">>> in edge #{inspect edgename} state: #{inspect edgelabel}"
+      acc and edgelabel.valid
+    end)
+
+    # check if output exists
+    output_exists = Enum.reduce(:digraph.out_edges(state.graph, tasksH), false, fn(edgename, acc) ->
+      # {edgename, _start, _end, edgelabel} = :digraph.edge state.graph, edgename
+      {^edgename, _start, _end, edgelabel} = :digraph.edge state.graph, edgename
+      Logger.debug ">>> out edge #{inspect edgename} state: #{inspect edgelabel}"
+      acc or edgelabel.valid
+    end)
+    
+    executable = input_valid and (not output_exists)
+    Logger.debug ">>> task: #{inspect tasksH} executable: #{executable} input_valid: #{input_valid} output exists: #{output_exists}"
+    if executable do
+      find_n_executables tasksT, [tasksH | executables], n-1, state
+    else
+      find_n_executables tasksT, executables, n, state
     end
   end
 end

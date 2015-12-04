@@ -5,6 +5,7 @@ defmodule Task.Stop do
   """
   
   def run(graph, taskname) do
+    Tskr.Viz.write graph
     []
   end
 end

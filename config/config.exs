@@ -7,7 +7,7 @@ config :tskr,
     %{:name => :stop, :state => %{code: Task.Stop}}
     ],
   edges: [
-    %{:name => :edgein, :label => %{valid: true, value: 3}, :source => :start, :target => :fib}, 
+    %{:name => :edgein, :label => %{valid: true, value: 8}, :source => :start, :target => :fib}, 
     %{:name => :edgeout, :label => %{valid: false, value: nil}, :source => :fib, :target => :stop} 
     ]
 
