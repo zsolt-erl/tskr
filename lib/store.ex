@@ -116,7 +116,7 @@ defmodule Tskr.Store do
   def handle_call({:update, oplist}, _from, state) do
     update_results =
       for operation <- oplist do
-        Logger.info "Tskr.Store.update operation: #{inspect operation}"
+        Logger.debug "Tskr.Store.update operation: #{inspect operation}"
         case operation do
           
           %{op: :delete_edge, name: edgename} ->
@@ -147,7 +147,7 @@ defmodule Tskr.Store do
         end
 
       end
-    Logger.info "Update Results: #{inspect update_results}"
+    Logger.debug "Update Results: #{inspect update_results}"
 
     {:reply, {:ok, update_results}, state}
   end

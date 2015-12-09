@@ -7,14 +7,14 @@ config :tskr,
     %{:name => :stop, :state => %{code: Task.Stop}}
     ],
   edges: [
-    %{:name => :edgein, :label => %{valid: true, value: 8}, :source => :start, :target => :fib}, 
+    %{:name => :edgein, :label => %{valid: true, value: 20}, :source => :start, :target => :fib}, 
     %{:name => :edgeout, :label => %{valid: false, value: nil}, :source => :fib, :target => :stop} 
     ]
 
 
-config :logger, :console,
-  format: "\n$date $time [$level] $metadata$message",
-  metadata: [:user_id]
+config :logger, :console, level: :info,
+  format: "\n#{__MODULE__} $time [$level] $metadata$message",
+  metadata: [:user_id, :mod]
 
 
 # This configuration is loaded before any dependency and is restricted
