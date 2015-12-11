@@ -15,6 +15,10 @@ defmodule Tskr.Scheduler do
     GenServer.call(__MODULE__, :runner_done)
   end
 
+  def start do
+    send __MODULE__, :start
+  end
+
 
   ##############################
   # server callbacks

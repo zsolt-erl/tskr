@@ -11,7 +11,6 @@ config :tskr,
     %{:name => :edgeout, :label => %{valid: false, value: nil}, :source => :fib, :target => :stop} 
     ]
 
-
 config :logger, :console, level: :info,
   format: "\n#{__MODULE__} $time [$level] $metadata$message",
   metadata: [:user_id, :mod]
