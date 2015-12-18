@@ -29,7 +29,9 @@ defmodule Tskr.Mixfile do
   # Type "mix help deps" for more examples and options
   defp deps do
     [
-      {:poolboy, "~> 1.5"}
+      {:poolboy, "~> 1.5"},
+      {:uuid, "~> 1.1"},
+      {:mongodb, "~> 0.1.0"}
     ]
   end
 end

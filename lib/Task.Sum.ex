@@ -1,5 +1,5 @@
 defmodule Task.Sum do
-  def run(graph, taskname) do
+  def run(graph, taskname, inputs \\ [], outputs \\ []) do
     # get state of task
     {taskname, taskstate} = :digraph.vertex graph, taskname
 

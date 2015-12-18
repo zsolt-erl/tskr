@@ -4,9 +4,11 @@ defmodule Task.Stop do
   The scheduler will stop graph execution after executing this task.
   """
   
+  import Tskr.Util
+
   def run(graph, taskname) do
     Tskr.Viz.write graph
-    []
+    [addEdge(taskname, taskname, value: 42)]
   end
 end
 

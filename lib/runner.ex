@@ -17,7 +17,7 @@ defmodule Tskr.Runner do
   # server callbacks
   ##############################
 
-  def init(args) do
+  def init(_args) do
     Logger.info "Runner starting ... "
     {:ok, []}
   end
@@ -45,12 +45,27 @@ defmodule Tskr.Runner do
   end
 
   def handle_cast( {:run, graph, taskname}, state ) do
-    Logger.info "Started Task: #{inspect taskname}"
-
     {^taskname, taskstate} = :digraph.vertex graph, taskname
-    graph_updates = (taskstate.code).run graph, taskname
 
-    Logger.info "Finished Task: #{inspect taskname} | results: #{inspect graph_updates}"
+    Logger.info "Started Task: #{inspect taskname} #{inspect taskstate.code}"
+    
+    # inputs = []
+    inputs = :digraph.in_edges( graph, taskname )
+              |> Enum.map( &(:digraph.edge graph, &1) )
+              |> Enum.map( fn({edgename, _, _, state}) -> %{name: edgename, value: state.value} end )
+
+    Logger.debug "Inputs: #{inspect inputs}"
+
+    outputs = :digraph.out_edges( graph, taskname )
+              |> Enum.map( &(:digraph.edge graph, &1) )
+              |> Enum.map( fn({edgename, _, _, state}) -> %{name: edgename, value: state.value} end )
+
+    Logger.debug "Outputs: #{inspect outputs}"
+
+    graph_updates = (taskstate.code).run graph, taskname, inputs, outputs
+
+    Logger.info "Finished Task: #{inspect taskname} | results:\n"
+    Enum.each graph_updates, &IO.inspect/1
 
     Tskr.Store.update(graph_updates)
 

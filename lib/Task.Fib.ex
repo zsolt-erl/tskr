@@ -1,4 +1,4 @@
-defmodule Task.Fib do
+defmodule Task.FibOld do
   def run(graph, taskname) do
     # get state of task
     {taskname, taskstate} = :digraph.vertex graph, taskname

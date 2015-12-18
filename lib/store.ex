@@ -59,7 +59,8 @@ defmodule Tskr.Store do
   ###################################
   def init(args) do
     Logger.info "Store init Arguments #{inspect args}"
-    graph = :digraph.new([:acyclic, :protected])
+    # graph = :digraph.new([:acyclic, :protected])
+    graph = :digraph.new([:cyclic, :protected])
     state = %{graph: graph}
     {:ok, state}
   end
@@ -138,12 +139,17 @@ defmodule Tskr.Store do
             {^edgename, source, target, edgestate} = :digraph.edge state.graph, edgename
             :digraph.add_edge state.graph, edgename, source, target, new_edgestate
 
+          %{op: :update_edge_value, name: edgename, new_value: new_value} ->
+            {^edgename, source, target, edgestate} = :digraph.edge state.graph, edgename
+            new_state = %{edgestate | value: new_value, valid: true}
+            :digraph.add_edge state.graph, edgename, source, target, new_state
+
           %{op: :update_task, name: taskname, new_state: new_taskstate} ->
             {^taskname, taskstate} = :digraph.vertex state.graph, taskname
             :digraph.add_vertex state.graph, taskname, new_taskstate
 
           _ -> 
-            :unknown_op
+            {:unknown_op, operation}
         end
 
       end

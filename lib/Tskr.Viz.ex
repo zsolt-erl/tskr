@@ -19,7 +19,7 @@ defmodule Tskr.Viz do
     :io_lib.format("~p", [term])
     |> List.flatten
     |> to_string
-    |> String.replace ~r/[{}, ]/, ""
+    |> String.replace( ~r/[{}, ]/, "" )
   end
   
 
@@ -38,12 +38,12 @@ defmodule Tskr.Viz do
     for vertname <- :digraph.vertices(graph) do
       {^vertname, label} = :digraph.vertex graph, vertname
       vertname_str = to_str vertname
-      line = List.flatten :io_lib.format("  ~s [label=\"~s\"];~n", [vertname_str, label.code])
+      line = List.flatten :io_lib.format("  \"~s\" [label=\"~s\"];~n", [vertname_str, label.code])
       IO.write file, line
     end
     for edgename <- :digraph.edges(graph) do
       {^edgename, from, to, label} = :digraph.edge graph, edgename
-      line = List.flatten :io_lib.format("  ~s -> ~s [label=\"~p\"];~n", [to_str(from), to_str(to), label.value])
+      line = List.flatten :io_lib.format("  \"~s\" -> \"~s\" [label=\"~p\"];~n", [to_str(from), to_str(to), label.value])
       IO.write file, line
     end
 
