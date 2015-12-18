@@ -1,44 +1,41 @@
-defmodule Task.FibOld do
-  def run(graph, taskname) do
-    # get state of task
-    {taskname, taskstate} = :digraph.vertex graph, taskname
+defmodule Task.Fib do
+  import Tskr.Util
 
-    # get incoming edge and state
-    [in_edge] = :digraph.in_edges graph, taskname
-    {^in_edge, in_edge_source, ^taskname, inedge_state} = :digraph.edge graph, in_edge
-
-    # get outgoing edge
-    [out_edge] = :digraph.out_edges graph, taskname
-    {^out_edge, ^taskname, out_edge_target, outedge_state} = :digraph.edge graph, out_edge
-
+  def run(graph, taskname, inputs \\ [], outputs \\ []) do
+    input_val = Enum.at(inputs, 0).value
     cond do 
-      inedge_state.value === 0 or inedge_state.value === 1 ->
-        # update output with result
-        new_edgestate = %{outedge_state | :value => inedge_state.value, :valid => true}
-        [%{op: :update_edge, name: out_edge, new_state: new_edgestate}]
+      input_val === 0 or input_val === 1 ->
+        # output equals the original input
+        [ updateEdgeValue(hd(outputs).name, input_val) ]
+
       true ->
         # replace current task with new tasks
-        t1fib = {taskname, 1}
-        t2fib = {taskname, 2}
-        t3sum = {taskname, 3}
-        [ 
-          # delete old task and edges
-          %{op: :delete_task, name: taskname},
-          %{op: :delete_edge, name: in_edge},
-          %{op: :delete_edge, name: out_edge},
-          
-          # add new tasks
-          %{op: :add_task, name: t1fib, state: %{code: Task.Fib}}, 
-          %{op: :add_task, name: t2fib, state: %{code: Task.Fib}}, 
-          %{op: :add_task, name: t3sum, state: %{code: Task.Sum}}, 
+        #####################################
 
-          # add new edges
-          %{op: :add_edge, name: nil, source: :start, target: t1fib, state: %{value: inedge_state.value-1, valid: true}},
-          %{op: :add_edge, name: nil, source: :start, target: t2fib, state: %{value: inedge_state.value-2, valid: true}},
-          %{op: :add_edge, name: nil, source: t1fib, target: t3sum, state: %{value: nil, valid: false}},
-          %{op: :add_edge, name: nil, source: t2fib, target: t3sum, state: %{value: nil, valid: false}},
-          %{op: :add_edge, name: out_edge, source: t3sum, target: out_edge_target, state: %{value: nil, valid: false}}
-        ]
+        # store original input and output edges
+        ein = getInEdges graph, taskname
+        eout = getOutEdges graph, taskname
+
+        # generate names for new tasks
+        fib1 = [generateTaskName(), Task.Fib]
+        fib2 = [generateTaskName(), Task.Fib]
+        sum  = [generateTaskName(), Task.Sum]
+
+        # calculate inputs for new Fib tasks
+        fib1_input = input_val - 1
+        fib2_input = input_val - 2
+
+        # create the replacement subgraph
+        replaceTask(graph, taskname, %{ 
+          fib1 => sum,
+          fib2 => sum,
+          {fib1_input} => fib1,
+          {fib2_input} => fib2
+        })
+        # connect original input edges to :stop (these are not needed anymore)
+        ++ (ein |> updateTarget(:park)) 
+        # connect original output edge to the Sum task
+        ++ (eout |> updateSource(hd(sum)))
     end
   end
 end

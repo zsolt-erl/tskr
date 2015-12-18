@@ -1,5 +1,5 @@
 defmodule Rebooter do
-  import Tskr.Spec
+  import Tskr.Util
 
   def build do
     updates = [
