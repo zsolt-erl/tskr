@@ -38,7 +38,8 @@ defmodule Tskr.Viz do
     for vertname <- :digraph.vertices(graph) do
       {^vertname, label} = :digraph.vertex graph, vertname
       vertname_str = to_str vertname
-      line = List.flatten :io_lib.format("  \"~s\" [label=\"~s\"];~n", [vertname_str, label.code])
+      #line = List.flatten :io_lib.format("  \"~s\" [label=\"~s\"];~n", [vertname_str, label.code])
+      line = List.flatten :io_lib.format("  \"~s\" [label=\"~s\"];~n", [vertname_str, vertname_str])
       IO.write file, line
     end
     for edgename <- :digraph.edges(graph) do

@@ -5,9 +5,9 @@ defmodule Task.Setup do
 
   import Tskr.Util
 
-  def run(_graph, _taskname, _inputs, _outputs) do
+  def run(_graph, _taskname, _inputs, outputs) do
     {:ok, _} = Tskr.MongoPool.start_link(database: "cmdb", hostname: "qain1ansred.qa.local")
-    [updateEdgeValue(:edgestart, 42)]
+    taskout(outputs, :go)
   end
 end
 

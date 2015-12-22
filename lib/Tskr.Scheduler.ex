@@ -11,8 +11,8 @@ defmodule Tskr.Scheduler do
     GenServer.start_link(__MODULE__, args, opts)
   end
 
-  def runner_done do
-    GenServer.call(__MODULE__, :runner_done)
+  def runner_done(taskname) do
+    GenServer.call(__MODULE__, {:runner_done, taskname})
   end
 
   def start do
@@ -25,17 +25,18 @@ defmodule Tskr.Scheduler do
   ##############################
 
   def init(args) do
-    state = %{tasks_to_do: [], graph: Tskr.Store.get_graph}
+    state = %{tasks_to_do: [], tasks_doing: [], graph: Tskr.Store.get_graph}
     Logger.info "scheduler starting ... #{inspect args}"
     # {:ok, state, 5000}
     {:ok, state}
   end
 
 
-  def handle_call(:runner_done, {worker_pid, _tag}, state) do
+  def handle_call({:runner_done, taskname}, {worker_pid, _tag}, state = %{tasks_doing: tasks_doing}) do
     :poolboy.checkin(:runner_pool, worker_pid)
 
-    {:reply, :ok, state, 50}
+    new_state = %{state | tasks_doing: tasks_doing -- [taskname]}
+    {:reply, :ok, new_state, 50}
   end
 
 
@@ -72,7 +73,7 @@ defmodule Tskr.Scheduler do
   @doc """
   add new tasks to the todo list
   """
-  defp add_tasks(state = %{tasks_to_do: tasklist}) do
+  defp add_tasks(state = %{tasks_to_do: tasklist, tasks_doing: tasks_doing}) do
     {pb_state, pb_workers, pb_overflow, pb_monitors} = :poolboy.status :runner_pool
 
     # get executable tasks
@@ -82,8 +83,9 @@ defmodule Tskr.Scheduler do
         state
       {:ok, tasknames} ->
         Logger.info "Got executable tasks: #{inspect tasknames}"
+        Logger.info "Not currently executing: #{inspect (tasknames--tasks_doing)}"
 
-        updated_tasks_to_do = tasklist ++ tasknames
+        updated_tasks_to_do = tasklist ++ (tasknames -- tasks_doing)
         %{state | tasks_to_do: updated_tasks_to_do}
     end
   end
@@ -92,20 +94,20 @@ defmodule Tskr.Scheduler do
   @doc """
   gives out work to idle workers
   """
-  defp give_out_work(state = %{tasks_to_do: tasklist, graph: graph}) do
+  defp give_out_work(state = %{tasks_to_do: tasklist, graph: graph, tasks_doing: tasks_doing}) do
     {pb_state, pb_workers, pb_overflow, pb_monitors} = :poolboy.status :runner_pool
 
-    updated_tasks_to_do = Enum.reduce(
+    {updated_to_do, updated_doing} = Enum.reduce(
       1..pb_workers,
-      tasklist,
+      {tasklist, tasks_doing},
       fn
-        (i, []) -> []
-        (i, [tasksH|tasksT]) ->
+        (i, {[], doing}) -> {[], doing}
+        (i, {[tasksH|tasksT], doing}) ->
           worker_pid = :poolboy.checkout :runner_pool
           Tskr.Runner.run(worker_pid, graph, tasksH)
-          tasksT
+          {tasksT, [tasksH|doing]}
       end)
-    %{state | tasks_to_do: updated_tasks_to_do}
+    %{state | tasks_to_do: updated_to_do, tasks_doing: updated_doing}
   end
 
 end

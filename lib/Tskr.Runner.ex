@@ -39,7 +39,7 @@ defmodule Tskr.Runner do
       Tskr.Store.update( [update_executed] ++ graph_updates )
 
       # tell scheduler that we are done
-      Tskr.Scheduler.runner_done
+      Tskr.Scheduler.runner_done :stop
     end
     {:noreply, state}
   end
@@ -52,13 +52,13 @@ defmodule Tskr.Runner do
     # inputs = []
     inputs = :digraph.in_edges( graph, taskname )
               |> Enum.map( &(:digraph.edge graph, &1) )
-              |> Enum.map( fn({edgename, _, _, state}) -> %{name: edgename, value: state.value} end )
+              |> Enum.map( fn({edgename, source, target, state}) -> %{name: edgename, source: source, target: target, state: state, value: state.value} end )
 
     Logger.debug "Inputs: #{inspect inputs}"
 
     outputs = :digraph.out_edges( graph, taskname )
               |> Enum.map( &(:digraph.edge graph, &1) )
-              |> Enum.map( fn({edgename, _, _, state}) -> %{name: edgename, value: state.value} end )
+              |> Enum.map( fn({edgename, source, target, state}) -> %{name: edgename, source: source, target: target, state: state, value: state.value} end )
 
     Logger.debug "Outputs: #{inspect outputs}"
 
@@ -70,7 +70,7 @@ defmodule Tskr.Runner do
     Tskr.Store.update(graph_updates)
 
     # tell scheduler that we are done
-    Tskr.Scheduler.runner_done
+    Tskr.Scheduler.runner_done taskname
     {:noreply, state}
   end
 

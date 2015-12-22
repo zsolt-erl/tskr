@@ -1,17 +1,48 @@
 defmodule Tskr.Util do
   import UUID
 
+  def graphUpdates(gu), do: List.flatten(gu)
+  
+  ############################################################################
+  # task functions
+  ############################################################################
   def generateTaskName, do: String.to_atom UUID.uuid4()
-  def addTask(name, code \\ Tskr.Noop), do:  %{op: :add_task, name: name, state: %{code: code}}
-  def delTask(name), do: %{op: :delete_task, name: name}
-  def updateTask(name, new_state), do: %{op: :update_task, name: name, new_state: new_state}
 
+  def addTask([name, code]) do  
+    %{op: :add_task, name: name, state: %{code: code}}
+  end
+  
+  def updateTask([name, _code], new_state) do
+    %{op: :update_task, name: name, new_state: new_state}
+  end
+  def updateTask(name, new_state) do
+    %{op: :update_task, name: name, new_state: new_state}
+  end
+  
+  def taskout(outputs, value) do
+    for o <- outputs do
+      %{op: :update_edge_value, name: o.name, new_value: value}
+    end
+  end
+
+  ############################################################################
+  # edge functions
+  ############################################################################
   @doc """
   args can be:
   name, value, filter
   filter is an expression given as a string that can be evalutated (eg. "{:failed, _}" or "true")
   """
   def addEdge(source, target, args \\ []) do
+    sourceName = cond do
+      is_atom(source) -> source
+      [taskname, taskcode] = source -> taskname
+    end
+    targetName = cond do
+      is_atom(target) -> target
+      [taskname, taskcode] = target -> taskname
+    end
+
     name = if Keyword.has_key?(args, :name), do: args[:name], else: nil
     {value, valid} = if Keyword.has_key?(args, :value), do: {args[:value], true}, else: {nil, false}
 
@@ -26,11 +57,56 @@ defmodule Tskr.Util do
     end
 
     state = %{value: value, valid: valid, filter: filter}
-    %{op: :add_edge, name: name, source: source, target: target, state: state}
+    %{op: :add_edge, name: name, source: sourceName, target: targetName, state: state}
   end
+
+  def changeTarget(edges, [taskname, _taskcode]) do
+    changeTargetFun(edges, taskname)
+  end
+  def changeTarget(edges, taskname) when is_atom(taskname) do
+    changeTargetFun(edges, taskname)
+  end
+  def changeTargetFun(edges, new_target) do
+    for e <- edges do
+      %{op: :add_edge, 
+        name: e.name, 
+        source: e.source, 
+        target: new_target, 
+        state: e.state
+      }
+    end
+  end
+
+
+  def changeSource(edges, [taskname, _taskcode]) do
+    changeSourceFun(edges, taskname)
+  end
+  def changeSource(edges, taskname) when is_atom(taskname) do
+    changeSourceFun(edges, taskname)
+  end
+  def changeSourceFun(edges, new_source) do
+    for e <- edges do
+      %{op: :add_edge, 
+        name: e.name, 
+        source: new_source, 
+        target: e.target, 
+        state: e.state
+      }
+    end
+  end
+
+
+  def addTask(name, code), do:  %{op: :add_task, name: name, state: %{code: code}}
+  def delTask(name), do: %{op: :delete_task, name: name}
+
+
   def delEdge(name), do: %{op: :delete_edge, name: name}
   def updateEdge(name, new_state), do: %{op: :update_edge, name: name, new_state: new_state}
   def updateEdgeValue(name, new_value), do: %{op: :update_edge_value, name: name, new_value: new_value}
+
+
+
+
 
   def getInEdges(graph, taskname) do
     for edgename <- :digraph.in_edges graph, taskname do

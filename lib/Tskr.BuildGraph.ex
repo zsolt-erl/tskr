@@ -1,5 +1,5 @@
 defmodule Tskr.BuildGraph do
-  import Tskr.Spec
+  import Tskr.Util
 
   def go do
     updates = [

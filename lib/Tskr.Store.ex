@@ -121,32 +121,40 @@ defmodule Tskr.Store do
         case operation do
           
           %{op: :delete_edge, name: edgename} ->
-            :digraph.del_edge state.graph, edgename
+            res = :digraph.del_edge state.graph, edgename
+            Logger.debug "result: #{inspect res}"
 
           %{op: :delete_task, name: taskname} ->
-            :digraph.del_vertex state.graph, taskname
+            res = :digraph.del_vertex state.graph, taskname
+            Logger.debug "result: #{inspect res}"
 
           %{op: :add_task, name: taskname, state: taskstate} ->
-            :digraph.add_vertex state.graph, taskname, taskstate
+            res = :digraph.add_vertex state.graph, taskname, taskstate
+            Logger.debug "result: #{inspect res}"
 
           %{op: :add_edge, name: nil, source: source, target: target, state: edgestate} ->
-            :digraph.add_edge state.graph, source, target, edgestate
+            res = :digraph.add_edge state.graph, source, target, edgestate
+            Logger.debug "result: #{inspect res}"
 
           %{op: :add_edge, name: edgename, source: source, target: target, state: edgestate} ->
-            :digraph.add_edge state.graph, edgename, source, target, edgestate
+            res = :digraph.add_edge state.graph, edgename, source, target, edgestate 
+            Logger.debug "result: #{inspect res}"
 
           %{op: :update_edge, name: edgename, new_state: new_edgestate} ->
             {^edgename, source, target, edgestate} = :digraph.edge state.graph, edgename
-            :digraph.add_edge state.graph, edgename, source, target, new_edgestate
+            res = :digraph.add_edge state.graph, edgename, source, target, new_edgestate
+            Logger.debug "result: #{inspect res}"
 
           %{op: :update_edge_value, name: edgename, new_value: new_value} ->
             {^edgename, source, target, edgestate} = :digraph.edge state.graph, edgename
             new_state = %{edgestate | value: new_value, valid: true}
-            :digraph.add_edge state.graph, edgename, source, target, new_state
+            res = :digraph.add_edge state.graph, edgename, source, target, new_state
+            Logger.debug "result: #{inspect res}"
 
           %{op: :update_task, name: taskname, new_state: new_taskstate} ->
             {^taskname, taskstate} = :digraph.vertex state.graph, taskname
-            :digraph.add_vertex state.graph, taskname, new_taskstate
+            res = :digraph.add_vertex state.graph, taskname, new_taskstate
+            Logger.debug "result: #{inspect res}"
 
           _ -> 
             {:unknown_op, operation}

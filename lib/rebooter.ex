@@ -11,7 +11,7 @@ defmodule Rebooter do
       addEdge(:setup, :rebooter, name: :edgestart),
       addEdge(:rebooter, :stop, name: :edgeout),
       addTask(:park, Task.Noop),
-      addEdge(:park, :stop, value: true)
+      addEdge(:park, :park, value: true)
       ]
     Tskr.Store.update updates
   end

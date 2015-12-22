@@ -5,16 +5,16 @@ defmodule Task.Rebooter do
   def run(graph, taskname, inputs, outputs) do
     # get names of all the pools from mongodb
     cursor = Mongo.find MongoPool, "edges", %{"startNodeName" => %{"$regex" => "G_qa.qa1s1..*"}}, limit: 20
-    Enum.to_list(cursor) |> IO.inspect
+    IO.puts "Number of pools: #{inspect length(Enum.to_list(cursor))}"
 
-    ein = getInEdges graph, taskname
-    eout = getOutEdges graph, taskname
-    t1f = [generateTaskName(), Task.Fib]
+    pselector = [generateTaskName(), Task.Poolselector]
 
-    replaceTask(graph, taskname, %{ {9} => t1f })
-    ++ ( ein |> updateTarget(:park) )
-    ++ ( eout |> updateSource(hd(t1f)) )
-
+    graphUpdates [
+      delTask(taskname),
+      addTask( pselector ), 
+      changeTarget(inputs, pselector),
+      changeSource(outputs, pselector)
+      ]
   end
 end
 
