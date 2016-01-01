@@ -20,8 +20,6 @@ defmodule Tskr.Util do
     %{op: :update_task, name: name, new_state: new_state}
   end
   
-  def delTask(name), do: %{op: :delete_task, name: name}
-
   def taskout(outputs, value) do
     for o <- outputs do
       %{op: :update_edge_value, name: o.name, new_value: value}
@@ -101,14 +99,12 @@ defmodule Tskr.Util do
     end
   end
 
+
+  def addTask(name, code), do:  %{op: :add_task, name: name, state: %{code: code}}
+  def delTask(name), do: %{op: :delete_task, name: name}
+
+
   def delEdge(name), do: %{op: :delete_edge, name: name}
-
-
-  # ----------------------------------------------------------------------------
-
-
-
-
   def updateEdge(name, new_state), do: %{op: :update_edge, name: name, new_state: new_state}
   def updateEdgeValue(name, new_value), do: %{op: :update_edge_value, name: name, new_value: new_value}
 

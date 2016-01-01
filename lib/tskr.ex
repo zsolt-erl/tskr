@@ -5,6 +5,9 @@ defmodule Tskr do
 
 
   def start(_type, _args) do
+    IO.puts("123"+"5")
+    IO.puts((123~>5, 42))
+
     import Supervisor.Spec, warn: false
 
     poolboy_config = [
