@@ -45,29 +45,29 @@ defmodule Tskr.Runner do
   end
 
   def handle_cast( {:run, graph, taskname}, state ) do
-    {^taskname, taskstate} = :digraph.vertex graph, taskname
+    {^taskname, taskStruct} = :digraph.vertex graph, taskname
 
-    Logger.info "Started Task: #{inspect taskname} #{inspect taskstate.code}"
+    Logger.info "Started Task: #{inspect taskname} #{inspect taskStruct.code}"
     
     # inputs = []
     inputs = :digraph.in_edges( graph, taskname )
               |> Enum.map( &(:digraph.edge graph, &1) )
-              |> Enum.map( fn({edgename, source, target, state}) -> %{name: edgename, source: source, target: target, state: state, value: state.value} end )
+              |> Enum.map( fn({edgename, source, target, edgeStruct}) -> edgeStruct end )
 
     Logger.debug "Inputs: #{inspect inputs}"
 
     outputs = :digraph.out_edges( graph, taskname )
               |> Enum.map( &(:digraph.edge graph, &1) )
-              |> Enum.map( fn({edgename, source, target, state}) -> %{name: edgename, source: source, target: target, state: state, value: state.value} end )
+              |> Enum.map( fn({edgename, source, target, edgeStruct}) -> edgeStruct end )
 
     Logger.debug "Outputs: #{inspect outputs}"
 
-    graph_updates = (taskstate.code).run graph, taskname, inputs, outputs
+    graph_updates = List.flatten( (taskStruct.code).run graph, taskStruct, inputs, outputs )
 
     Logger.info "Finished Task: #{inspect taskname} | results:\n"
     Enum.each graph_updates, &IO.inspect/1
 
-    Tskr.Store.update(graph_updates)
+    Tskr.Store.update graph_updates
 
     # tell scheduler that we are done
     Tskr.Scheduler.runner_done taskname

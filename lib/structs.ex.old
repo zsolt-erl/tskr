@@ -3,29 +3,29 @@ defmodule Tsk do
 
   defstruct name: nil, code: Tsk.Noop
 
-  # needed to create new tsks with different default names
-  def new(fieldUpdates), do: Map.merge(  %{%Tsk{} | name: String.to_atom(UUID.uuid4)}, Enum.into(fieldUpdates, %{}))
+  # needed to create new nodes with different default names
+  def new(fieldUpdates), do: Map.merge(  %{%Node{} | name: String.to_atom(UUID.uuid4)}, Enum.into(fieldUpdates, %{}))
 
-  # execute tsk operations on a graph
-  def doAdd(graph, tsk), do: :digraph.add_vertex graph, tsk.name, tsk
-  def doDel(graph, tsk), do: :digraph.del_vertex graph, tsk.name
-  def doUpdate(graph, tsk, changes) do
+  # execute node operations on a graph
+  def doAdd(graph, node), do: :digraph.add_vertex graph, node.name, node
+  def doDel(graph, node), do: :digraph.del_vertex graph, node.name
+  def doUpdate(graph, node, changes) do
     # changes is a keyword list
-    new_tsk = 
-      Enum.reduce changes, tsk, fn({ch_key, ch_value}, acc) -> 
+    new_node = 
+      Enum.reduce changes, node, fn({ch_key, ch_value}, acc) -> 
         Map.put(acc, ch_key, ch_value)
       end
-    Tsk.doAdd graph, new_tsk
+    Node.add graph, new_node
   end
 
   # create messages that can be processed by Tskr.Store
-  def add(tsk),             do: %{op: &Tsk.doAdd/2, args: [tsk]}
-  def del(tsk),             do: %{op: &Tsk.doDel/2, args: [tsk]}
-  def update(tsk, changes), do: %{op: &Tsk.doUpdate/3, args: [tsk, changes]}
+  def add(node),             do: %{op: &Node.doAdd/2, args: [node]}
+  def del(node),             do: %{op: &Node.doDel/2, args: [node]}
+  def update(node, changes), do: %{op: &Node.doUpdate/3, args: [node, changes]}
 
-  # def add(tsk), do: %{op: :tsk_add, tsk: tsk}
-  # def del(tsk), do: %{op: :tsk_del, tsk: tsk}
-  # def update(tsk, args), do: %{op: :tsk_update, tsk: tsk, args: args}
+  # def add(node), do: %{op: :node_add, node: node}
+  # def del(node), do: %{op: :node_del, node: node}
+  # def update(node, args), do: %{op: :node_update, node: node, args: args}
 
 end
 
@@ -48,7 +48,7 @@ defmodule Edge do
         ({:value, ch_value}, acc) -> acc |> Map.put(:value, ch_value) |> Map.put(:valid, true)
         ({ch_key, ch_value}, acc) -> acc |> Map.put(ch_key, ch_value)
       end
-    Edge.doAdd graph, new_edge
+    Edge.add graph, new_edge
   end
 
   def add(edge),              do: %{op: &Edge.doAdd/2, args: [edge]}

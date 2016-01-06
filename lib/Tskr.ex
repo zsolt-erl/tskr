@@ -3,11 +3,7 @@ defmodule Tskr do
 
   defp runner_pool_name, do: :runner_pool
 
-
   def start(_type, _args) do
-    IO.puts("123"+"5")
-    IO.puts((123~>5, 42))
-
     import Supervisor.Spec, warn: false
 
     poolboy_config = [

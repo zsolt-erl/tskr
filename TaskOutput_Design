@@ -1,0 +1,60 @@
+Node
+- create: code | {name, code}
+- reference: name
+
+Edge
+- create: {origin, target} | {origin, target, value} | {name, origin, target} | {name, origin, target, value}
+- reference: name
+
+
+subgraph description:
+
+- unnamed edge:
+:node1 => :node2
+
+- unnamed edge with value:
+
+
+
+
+addedge :start, :end
+
+[name: :huhuhu, value: 42] |> addedge :start, :end
+
+:start ~> :end
+
+
+
+Poolselector updates:
+=====================
+
+done? = &(&1 = {:done, _})
+delSource = &(delTask &1.source)
+hostsel = %Task{code: Task.HostSel}
+
+[
+	inputs |> Enum.filter done? |> Enum.map delSource 
+
+	hostsel ~> taskname
+	hostsel |> updateTask pool: poolsHead
+	taskname |> updateTask pools: poolsTail
+
+	outputs |> updateEdge value: 42
+]
+
+Fibonacci:
+==========
+fib1_task = %Task(code: Task.Fib)
+fib2_task = %Task(code: Task.Fib)
+
+[
+	inputs |> Enum.map updateEdge target: :park
+
+	fib1_task ~> sum_task
+	fib2_task ~> sum_task
+
+	5 ~>> fib1_task
+	6 ~>> fib2_task
+
+	outputs |> Enum.map updateEdge source: sum_task
+]

@@ -115,53 +115,35 @@ defmodule Tskr.Store do
   # UPDATE
   ###################################
   def handle_call({:update, oplist}, _from, state) do
+    gr = state.graph
     update_results =
       for operation <- oplist do
         Logger.debug "Tskr.Store.update operation: #{inspect operation}"
         case operation do
-          
-          %{op: :delete_edge, name: edgename} ->
-            res = :digraph.del_edge state.graph, edgename
-            Logger.debug "result: #{inspect res}"
+          %{op: op, args: args} -> 
+            case Kernel.apply op, [gr | args] do
+              {:error, err} ->
+                Logger.error "Update result: #{inspect err}"
+                err
+              result ->
+                Logger.debug "Update result: #{inspect result}"
+                result
+            end
+                
 
-          %{op: :delete_task, name: taskname} ->
-            res = :digraph.del_vertex state.graph, taskname
-            Logger.debug "result: #{inspect res}"
+#           %{op: :edge_add, edge: edge} -> Edge.doAdd gr, edge
+#           %{op: :edge_del, edge: edge} -> Edge.doDel gr, edge
+#           %{op: :edge_update, edge: edge, args: args} -> Edge.doUpdate gr, edge, args
+# 
+#           %{op: :task_add, task: task} -> Task.doAdd gr, task
+#           %{op: :task_del, task: task} -> Task.doDel gr, task
+#           %{op: :task_update, task: task, args: args} -> Task.doUpdate gr, task, args
 
-          %{op: :add_task, name: taskname, state: taskstate} ->
-            res = :digraph.add_vertex state.graph, taskname, taskstate
-            Logger.debug "result: #{inspect res}"
-
-          %{op: :add_edge, name: nil, source: source, target: target, state: edgestate} ->
-            res = :digraph.add_edge state.graph, source, target, edgestate
-            Logger.debug "result: #{inspect res}"
-
-          %{op: :add_edge, name: edgename, source: source, target: target, state: edgestate} ->
-            res = :digraph.add_edge state.graph, edgename, source, target, edgestate 
-            Logger.debug "result: #{inspect res}"
-
-          %{op: :update_edge, name: edgename, new_state: new_edgestate} ->
-            {^edgename, source, target, edgestate} = :digraph.edge state.graph, edgename
-            res = :digraph.add_edge state.graph, edgename, source, target, new_edgestate
-            Logger.debug "result: #{inspect res}"
-
-          %{op: :update_edge_value, name: edgename, new_value: new_value} ->
-            {^edgename, source, target, edgestate} = :digraph.edge state.graph, edgename
-            new_state = %{edgestate | value: new_value, valid: true}
-            res = :digraph.add_edge state.graph, edgename, source, target, new_state
-            Logger.debug "result: #{inspect res}"
-
-          %{op: :update_task, name: taskname, new_state: new_taskstate} ->
-            {^taskname, taskstate} = :digraph.vertex state.graph, taskname
-            res = :digraph.add_vertex state.graph, taskname, new_taskstate
-            Logger.debug "result: #{inspect res}"
-
-          _ -> 
-            {:unknown_op, operation}
+          _ -> {:unknown_op, operation}
         end
 
       end
-    Logger.debug "Update Results: #{inspect update_results}"
+      # Logger.debug "Update Results: #{inspect update_results}"
 
     {:reply, {:ok, update_results}, state}
   end

@@ -9,8 +9,8 @@ defmodule Tskr.Util do
   ############################################################################
   def generateTaskName, do: String.to_atom UUID.uuid4()
 
-  def addTask([name, code]) do  
-    %{op: :add_task, name: name, state: %{code: code}}
+  def addTask(task) do  
+    %{op: :add_task, task: task}
   end
   
   def updateTask([name, _code], new_state) do
@@ -32,7 +32,11 @@ defmodule Tskr.Util do
   # edge functions
   ############################################################################
 
-  def a ~> b, do: addedge(a,b)
+  # def sourceTask ~> targetTask, do: Edge.add( %Edge{source: sourceTask.name, target: targetTask.name} )
+  # def val ~>> targetTask, do: Edge.add( %Edge{source: :start, target: targetTask.name, value: val, valid: true} )
+
+  def sourceTask ~> targetTask, do: Edge.add( Edge.new(source: sourceTask.name, target: targetTask.name) )
+  def val ~>> targetTask, do: Edge.add( Edge.new(source: :start, target: targetTask.name, value: val, valid: true) )
   
   @doc """
   args can be:
@@ -109,86 +113,86 @@ defmodule Tskr.Util do
 
 
 
-  def updateEdge(name, new_state), do: %{op: :update_edge, name: name, new_state: new_state}
-  def updateEdgeValue(name, new_value), do: %{op: :update_edge_value, name: name, new_value: new_value}
-
-
-
-
-
-  def getInEdges(graph, taskname) do
-    for edgename <- :digraph.in_edges graph, taskname do
-      :digraph.edge graph, edgename
-    end
-  end
-
-
-  def getOutEdges(graph, taskname) do 
-    for edgename <- :digraph.out_edges graph, taskname do
-      :digraph.edge graph, edgename
-    end
-  end
-
-
-  def updateSource(edges, new_source) do
-    for edge <- edges do
-      {edgename, source, target, state} = edge
-      %{op: :add_edge, name: edgename, source: new_source, target: target, state: state}
-    end
-  end
-
-  def updateTarget(edges, new_target) do
-    for edge <- edges do
-      {edgename, source, target, state} = edge
-      %{op: :add_edge, name: edgename, source: source, target: new_target, state: state}
-    end
-  end
-
-  def replaceTask graph, taskname, edgeMap do
-    Enum.reduce edgeMap, [delTask(taskname)], 
-    fn
-      ( {sourceTaskCode, targetTaskCode}, acc ) when is_atom(sourceTaskCode) and is_atom(targetTaskCode) ->
-        # create edge and create tasks with random names
-        sourceTaskName = UUID.uuid4()
-        targetTaskName = UUID.uuid4()
-
-        acc ++ [
-          addTask(sourceTaskName, sourceTaskCode),
-          addTask(targetTaskName, targetTaskCode),
-          addEdge(sourceTaskName, targetTaskName)
-        ]
-
-      ( {[sourceTaskName, sourceTaskCode], [targetTaskName, targetTaskCode]}, acc ) ->
-        # create edge and create tasks with given name and code
-        acc ++ [
-          addTask(sourceTaskName, sourceTaskCode),
-          addTask(targetTaskName, targetTaskCode),
-          addEdge(sourceTaskName, targetTaskName)
-        ]
-
-      ( {{edgeValue}, taskCode}, acc ) when is_atom(taskCode)->
-        # create edge with value set and task with random name
-        taskName = UUID.uuid4()
-        acc ++ [
-          addTask(taskName, taskCode),
-          addEdge(:start, taskName, value: edgeValue)
-        ]
-
-      ( {{edgeValue}, [taskName, taskCode]}, acc ) ->
-        # create edge with value set and task with given name and code
-        acc ++ [
-          addTask(taskName, taskCode),
-          addEdge(:start, taskName, value: edgeValue)
-        ]
-    end
-  end
-
-    #myInputs = getInNames graph, taskname
-    #myOutputs = getOutNames graph, taskname
-
-    #inputUpdates = for input <- myInputs do
-      #  {^input, ^taskname, inedge_target, inedge_state} = :digraph.edge graph, input
-      #end
-
+  #   def updateEdge(name, new_state), do: %{op: :update_edge, name: name, new_state: new_state}
+  #   def updateEdgeValue(name, new_value), do: %{op: :update_edge_value, name: name, new_value: new_value}
+  # 
+  # 
+  # 
+  # 
+  # 
+  #   def getInEdges(graph, taskname) do
+  #     for edgename <- :digraph.in_edges graph, taskname do
+  #       :digraph.edge graph, edgename
+  #     end
+  #   end
+  # 
+  # 
+  #   def getOutEdges(graph, taskname) do 
+  #     for edgename <- :digraph.out_edges graph, taskname do
+  #       :digraph.edge graph, edgename
+  #     end
+  #   end
+  # 
+  # 
+  #   def updateSource(edges, new_source) do
+  #     for edge <- edges do
+  #       {edgename, source, target, state} = edge
+  #       %{op: :add_edge, name: edgename, source: new_source, target: target, state: state}
+  #     end
+  #   end
+  # 
+  #   def updateTarget(edges, new_target) do
+  #     for edge <- edges do
+  #       {edgename, source, target, state} = edge
+  #       %{op: :add_edge, name: edgename, source: source, target: new_target, state: state}
+  #     end
+  #   end
+  # 
+  #   def replaceTask graph, taskname, edgeMap do
+  #     Enum.reduce edgeMap, [delTask(taskname)], 
+  #     fn
+  #       ( {sourceTaskCode, targetTaskCode}, acc ) when is_atom(sourceTaskCode) and is_atom(targetTaskCode) ->
+  #         # create edge and create tasks with random names
+  #         sourceTaskName = UUID.uuid4()
+  #         targetTaskName = UUID.uuid4()
+  # 
+  #         acc ++ [
+  #           addTask(sourceTaskName, sourceTaskCode),
+  #           addTask(targetTaskName, targetTaskCode),
+  #           addEdge(sourceTaskName, targetTaskName)
+  #         ]
+  # 
+  #       ( {[sourceTaskName, sourceTaskCode], [targetTaskName, targetTaskCode]}, acc ) ->
+  #         # create edge and create tasks with given name and code
+  #         acc ++ [
+  #           addTask(sourceTaskName, sourceTaskCode),
+  #           addTask(targetTaskName, targetTaskCode),
+  #           addEdge(sourceTaskName, targetTaskName)
+  #         ]
+  # 
+  #       ( {{edgeValue}, taskCode}, acc ) when is_atom(taskCode)->
+  #         # create edge with value set and task with random name
+  #         taskName = UUID.uuid4()
+  #         acc ++ [
+  #           addTask(taskName, taskCode),
+  #           addEdge(:start, taskName, value: edgeValue)
+  #         ]
+  # 
+  #       ( {{edgeValue}, [taskName, taskCode]}, acc ) ->
+  #         # create edge with value set and task with given name and code
+  #         acc ++ [
+  #           addTask(taskName, taskCode),
+  #           addEdge(:start, taskName, value: edgeValue)
+  #         ]
+  #     end
+  #   end
+  # 
+  #     #myInputs = getInNames graph, taskname
+  #     #myOutputs = getOutNames graph, taskname
+  # 
+  #     #inputUpdates = for input <- myInputs do
+  #       #  {^input, ^taskname, inedge_target, inedge_state} = :digraph.edge graph, input
+  #       #end
+  # 
 
 end
