@@ -22,44 +22,16 @@ defmodule Tskr.Runner do
     {:ok, []}
   end
 
-  def handle_cast( {:run, graph, :stop}, state ) do
-    {:stop, taskstate} = :digraph.vertex graph, :stop
-
-    if not (Map.has_key?(taskstate, :executed) and taskstate.executed) do
-      # this was not executed yet
-      # need to execute it
-      Logger.info "Started Task: :stop"
-
-      new_tasktate = Map.put taskstate, :executed, true
-      update_executed = %{op: :update_task, name: :stop, new_state: new_tasktate}
-      graph_updates = (taskstate.code).run graph, :stop
-
-      Logger.info "Finished Task: :stop | results: #{inspect graph_updates}"
-
-      Tskr.Store.update( [update_executed] ++ graph_updates )
-
-      # tell scheduler that we are done
-      Tskr.Scheduler.runner_done :stop
-    end
-    {:noreply, state}
-  end
 
   def handle_cast( {:run, graph, taskname}, state ) do
     {^taskname, taskStruct} = :digraph.vertex graph, taskname
 
     Logger.info "Started Task: #{inspect taskname} #{inspect taskStruct.code}"
     
-    # inputs = []
-    inputs = :digraph.in_edges( graph, taskname )
-              |> Enum.map( &(:digraph.edge graph, &1) )
-              |> Enum.map( fn({edgename, source, target, edgeStruct}) -> edgeStruct end )
-
+    inputs = get_inputs( graph, taskname )
     Logger.debug "Inputs: #{inspect inputs}"
 
-    outputs = :digraph.out_edges( graph, taskname )
-              |> Enum.map( &(:digraph.edge graph, &1) )
-              |> Enum.map( fn({edgename, source, target, edgeStruct}) -> edgeStruct end )
-
+    outputs = get_outputs( graph, taskname )
     Logger.debug "Outputs: #{inspect outputs}"
 
     graph_updates = List.flatten( (taskStruct.code).run graph, taskStruct, inputs, outputs )
@@ -75,5 +47,17 @@ defmodule Tskr.Runner do
   end
 
 
+  defp get_inputs(graph, taskname) do
+    :digraph.in_edges( graph, taskname )
+      |> Enum.map( &(:digraph.edge graph, &1) )
+      |> Enum.map( fn({edgename, source, target, edgeStruct}) -> edgeStruct end )
+  end
+
+
+  defp get_outputs(graph, taskname) do
+    :digraph.out_edges( graph, taskname )
+      |> Enum.map( &(:digraph.edge graph, &1) )
+      |> Enum.map( fn({edgename, source, target, edgeStruct}) -> edgeStruct end )
+  end
 end
 

@@ -5,11 +5,16 @@ defmodule Tsk.Stop do
   """
   
   import Tskr.Util
+  require Logger
 
-  def run(graph, myself) do
+  def run(graph, myself, inputs, outputs) do
     Tskr.Viz.write graph
+    Logger.info "#################"
+    Logger.info "# result: #{inspect hd(inputs).value}"
+    Logger.info "#################"
+
     [
-      Edge.add Edge.new( source: myself, target: myself, value: 42 )
+      Edge.add Edge.new( source: myself.name, target: myself.name, value: 42 )
     ]
   end
 end
