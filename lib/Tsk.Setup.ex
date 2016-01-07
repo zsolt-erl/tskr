@@ -1,6 +1,6 @@
 defmodule Tsk.Setup do
   @doc """
-  setup functions that need to be done before running the rest of the tsks
+  setup functions that need to be done before running the rest of the tasks
   """
 
   import Tskr.Util

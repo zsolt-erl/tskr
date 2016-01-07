@@ -4,70 +4,68 @@ defmodule Tsk.Poolselector do
   require Logger
 
   @doc """
-  initialize the tsk, get list of pools from the db
+  initialize the task, get list of pools from the db
   """
-  def run(graph, tskname, [%{value: :go}] = inputs, outputs) do
+  def run(_graph, myself, [%{value: :go}] = inputs, _outputs) do
     Logger.warn "Poolselector first time run!"
 
     # get pool names from db
-    query =%{"startTskName" => %{"$regex" => "G_qa.qa1s1..*"}, "relation" => "member", "endTskName" => %{"$regex" => "G_qa.qa1s1..*"}}
-    cursor = Mongo.find MongoPool, "edges", query, limit: 3
-    poolnames = cursor |> Enum.map( fn(edge) -> edge["endTskName"] end )
-    {^tskname, tskstate} = :digraph.vertex graph, tskname
-    new_state = Map.put tskstate, :poolnames, tl(poolnames)
+    # query =%{"startNodeName" => %{"$regex" => "G_qa.qa1s1..*"}, "relation" => "member", "endNodeName" => %{"$regex" => "G_qa.qa1s1..*"}}
+    query =%{"startNodeName" => %{"$regex" => "G_qa.qa1s1..*"}, "relation" => "member", "endNodeName" => %{"$regex" => "^((?!^G_).)*$" }}
+    cursor = Mongo.distinct MongoPool, "edges", "startNodeName", query, limit: 3
+    # poolnames = cursor |> Enum.map( fn(edge) -> edge["endNodeName"] end )
+    poolnames = Enum.slice cursor, 0..2
+
+    Logger.warn "Poolnames: #{inspect poolnames}"
 
     hostsel = Tsk.new code: Tsk.Hostselector
+
     [ 
       # park incoming edge
-      #changeTarget( inputs, :park ),
+      inputs |> Edge.updates( target: :park ),
 
-      # update tsk state with poolnames
-      # updateTsk(tskname, new_state),
+      # update task state with poolnames
+      myself |> Tsk.update( poolnames: tl(poolnames) ),
       
-      # add new host selector tsk
-      #addTsk(hostsel),
+      # add new host selector task
+      hostsel |> Tsk.add,
+
+      # update host selector with the pool name it needs to work on
+      hostsel |> Tsk.update( poolname: hd(poolnames) ),
       
       # connect host selector to pool selector
-      #addEdge( hostsel, tskname),
-      
-      # update host selector with the pool name it needs to work on 
-      # TODO this shouldn't need the code field again
-      #updateTsk(hostsel, %{code: Tsk.Hostselector, poolname: hd(poolnames)})
+      hostsel ~> myself
     ]
   end
 
-  def run(graph, tskname, inputs, outputs) do
+
+  def run(_graph, myself, inputs, outputs) do
     done_inputs = Enum.filter inputs, fn
       (%{value: {:done, _}}) -> true
       (_) -> false
     end
     done_poolnames = Enum.map done_inputs, fn(i)->elem(i.value, 1) end
-    # update tsk state
-    {^tskname, tskstate} = :digraph.vertex graph, tskname
-    remaining_pools = tskstate.poolnames -- done_poolnames
+
+    remaining_pools = myself.poolnames -- done_poolnames
+
     case remaining_pools do
       [] ->
         # we are done, update output
-        #tskout(outputs, :done)
-        []
+        outputs |> Edge.updates(value: :done)
+
       [next_pool | tail] ->
-        []
-        # create host selector for next pool
-        # hostsel = [generateTskName, Tsk.Hostselector]
-        # # update state with tail
-        # new_state = %{tskstate | poolnames: tail}
-        # graphUpdates [
-        #   for i <- done_inputs do 
-        #   delTsk(i.source)
-        #   end,
+        hostsel = Tsk.new code: Tsk.Hostselector 
+        [
+          myself |> Tsk.update(poolnames: tail),
 
-        #   updateTsk(tskname, new_state),
+          # delete sources of done inputs
+          # TODO ugly hack to make Tsk.del work, Tsk.del needs a task but the edge.source is a task name
+          done_inputs |> Enum.map( &(Tsk.del( %{name: &1.source} ) ) ),
 
-        #   addTsk(hostsel),
-        #   addEdge(hostsel, tskname),
-        #   # TODO this shouldn't need the code field again
-        #   updateTsk(hostsel, %{code: Tsk.Hostselector, poolname: next_pool}),
-        # ]
+          hostsel |> Tsk.add,
+          hostsel |> Tsk.update( poolname: next_pool ),
+          hostsel ~> myself
+        ]
     end
   end
 end

@@ -1,10 +1,9 @@
 defmodule Tsk do
   import UUID
 
-  defstruct name: nil, code: Tsk.Noop
+  defp defaultTsk, do: %{name: String.to_atom(UUID.uuid4), code: nil}
 
-  # needed to create new tsks with different default names
-  def new(fieldUpdates), do: Map.merge(  %{%Tsk{} | name: String.to_atom(UUID.uuid4)}, Enum.into(fieldUpdates, %{}))
+  def new(fieldUpdates), do: Enum.into(fieldUpdates, defaultTsk)
 
   # execute tsk operations on a graph
   def doAdd(graph, tsk), do: :digraph.add_vertex graph, tsk.name, tsk
@@ -22,22 +21,16 @@ defmodule Tsk do
   def add(tsk),             do: %{op: &Tsk.doAdd/2, args: [tsk]}
   def del(tsk),             do: %{op: &Tsk.doDel/2, args: [tsk]}
   def update(tsk, changes), do: %{op: &Tsk.doUpdate/3, args: [tsk, changes]}
-
-  # def add(tsk), do: %{op: :tsk_add, tsk: tsk}
-  # def del(tsk), do: %{op: :tsk_del, tsk: tsk}
-  # def update(tsk, args), do: %{op: :tsk_update, tsk: tsk, args: args}
-
 end
 
 
 defmodule Edge do
   import UUID
+  require Logger
 
-  def defaultFilter(x), do: true
+  defp defaultEdge, do: %{name: String.to_atom(UUID.uuid4), source: nil, target: nil, value: nil, valid: false, filter: fn(x)-> true end}
 
-  defstruct name: nil, source: nil, target: nil, value: nil, valid: false, filter: &Edge.defaultFilter/1
-
-  def new(fieldUpdates), do: Map.merge( %{%Edge{} | name: String.to_atom(UUID.uuid4)}, Enum.into(fieldUpdates, %{}))
+  def new(fieldUpdates), do: Enum.into(fieldUpdates, defaultEdge)
 
   def doAdd(graph, edge), do: :digraph.add_edge graph, edge.name, edge.source, edge.target, edge 
   def doDel(graph, edge), do: :digraph.del_edge graph, edge.name 
@@ -48,6 +41,7 @@ defmodule Edge do
         ({:value, ch_value}, acc) -> acc |> Map.put(:value, ch_value) |> Map.put(:valid, true)
         ({ch_key, ch_value}, acc) -> acc |> Map.put(ch_key, ch_value)
       end
+    Edge.doDel graph, edge
     Edge.doAdd graph, new_edge
   end
 
@@ -57,10 +51,4 @@ defmodule Edge do
   def updates(edges, changes) do
     for e <- edges, do: Edge.update e, changes
   end
-
-
-  # def add(edge), do: %{op: :edge_add, edge: edge}
-  # def del(edge), do: %{op: :edge_del, edge: edge}
-  # def update(edge, args), do: %{op: :edge_update, edge: edge, args: args}
-
 end

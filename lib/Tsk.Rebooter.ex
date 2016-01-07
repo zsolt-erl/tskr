@@ -4,8 +4,8 @@ defmodule Tsk.Rebooter do
 
   def run(graph, myself, inputs, outputs) do
     # get names of all the pools from mongodb
-    cursor = Mongo.find MongoPool, "edges", %{"startNodeName" => %{"$regex" => "G_qa.qa1s1..*"}}, limit: 20
-    IO.puts "Number of pools: #{inspect length(Enum.to_list(cursor))}"
+    #cursor = Mongo.find MongoPool, "edges", %{"startNodeName" => %{"$regex" => "G_qa.qa1s1..*"}}, limit: 20
+    #IO.puts "Number of pools: #{inspect length(Enum.to_list(cursor))}"
 
     psel = Tsk.new code: Tsk.Poolselector
 

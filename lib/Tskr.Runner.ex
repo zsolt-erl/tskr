@@ -26,7 +26,7 @@ defmodule Tskr.Runner do
   def handle_cast( {:run, graph, taskname}, state ) do
     {^taskname, taskStruct} = :digraph.vertex graph, taskname
 
-    Logger.info "Started Task: #{inspect taskname} #{inspect taskStruct.code}"
+    Logger.warn "Started Task: #{inspect taskname} #{inspect taskStruct.code}"
     
     inputs = get_inputs( graph, taskname )
     Logger.debug "Inputs: #{inspect inputs}"
@@ -36,7 +36,7 @@ defmodule Tskr.Runner do
 
     graph_updates = List.flatten( (taskStruct.code).run graph, taskStruct, inputs, outputs )
 
-    Logger.info "Finished Task: #{inspect taskname} | results:\n"
+    Logger.warn "Finished Task: #{inspect taskname} | results:\n"
     Enum.each graph_updates, &IO.inspect/1
 
     Tskr.Store.update graph_updates
