@@ -33,6 +33,7 @@ defmodule Tsk.Poolselector do
       # update host selector with the pool name it needs to work on
       hostsel |> Tsk.update( poolname: hd(poolnames) ),
       
+      {:go, hd(poolnames)} ~>> hostsel,
       # connect host selector to pool selector
       hostsel ~> myself
     ]
@@ -64,6 +65,7 @@ defmodule Tsk.Poolselector do
 
           hostsel |> Tsk.add,
           hostsel |> Tsk.update( poolname: next_pool ),
+          {:go, next_pool} ~>> hostsel,
           hostsel ~> myself
         ]
     end
