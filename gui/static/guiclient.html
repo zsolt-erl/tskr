@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html>
+
+  <style>
+
+    .link {
+      stroke: #000;
+      stroke-width: 1.5px;
+    }
+
+    .node {
+      fill: #000;
+      stroke: #666;
+      stroke-width: 1.5px;
+    }
+
+    .label text {
+      font: bold 22px sans-serif;
+      fill: #000;
+    }
+
+  </style>
+
+
+  <body>
+    <script src=location.origin+"/static/sockjs.min.js"></script>
+    <script src=location.origin+"/static/jquery.min.js"></script>
+    <script src=location.origin+"/static/d3.min.js"></script>
+    <script>
+      $(function() {
+        var width = 1500;
+        var height = 900;
+
+        var color = d3.scale.category10();
+
+        var nodes = [];
+        var links = [];
+        var linkjoin;
+        var nodejoin;
+        var nodeSelection;
+
+
+        var svg = d3.select("body").append("svg")
+        .attr("width", width)
+        .attr("height", height);
+
+        var force = d3.layout.force()
+        .nodes(nodes)
+        .links(links)
+        .gravity(0.05)
+        //.linkDistance(150)
+        .distance(350)
+        .charge(-400)
+        .friction(0.2)
+        .size([width, height])
+        .on("tick", tick);
+
+
+        function update(animate) {
+          // update svg and start layout whenever nodes/links added/removed
+
+          linkSelection = svg.selectAll(".link").data(links);
+          linkSelection.enter()
+          .append("line")
+          .attr("class", function(d) { return "link " + d.id; });
+          linkSelection.exit().remove();
+
+          nodeSelection = svg.selectAll(".node").data(nodes);
+          nodeSelection.enter().append("circle")
+          .attr("r", 8)
+          .attr("class", "node");
+          nodeSelection.exit().remove();
+
+          labelSelection = svg.selectAll(".label").data(nodes);
+          labelSelection.enter().append("text")
+          .attr("class", "label")
+          .attr("dx", 12)
+          .attr("dy", ".35em")
+          .text( function(d) { return d.id; });
+          labelSelection.exit().remove();
+
+          force.start();
+        }
+
+
+        function tick() {
+          // node.attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")"; });
+
+          nodeSelection
+          .attr("cx", function(d) { return d.x; })
+          .attr("cy", function(d) { return d.y; });
+
+          labelSelection
+          .attr("x", function(d) { return d.x; })
+          .attr("y", function(d) { return d.y; });
+
+          linkSelection
+          .attr("x1", function(d) { return d.source.x; })
+          .attr("y1", function(d) { return d.source.y; })
+          .attr("x2", function(d) { return d.target.x; })
+          .attr("y2", function(d) { return d.target.y; });
+        }
+
+
+        // set up connection to server
+        var conn = new SockJS(location.origin + '/sockjs');
+
+        // handle incoming messages
+        conn.onmessage = function(msg) {
+          console.log('Got:', msg.data);
+
+          data = JSON.parse(msg.data);
+          console.log('parsed:', data);
+
+          switch (data.cmd){
+            case 'update_title' :
+              d3.select('#title').text(data.text)
+              break;
+
+            case 'create_node' :
+              nodes.push(data.node);
+              update(1);
+              break;
+
+            case 'delete_node' :
+              for (var i = 0, len = nodes.length; i < len; i++){
+                if (nodes[i].id == data.id) {
+                  nodes.splice(i, 1);
+                  break;
+                }
+              }
+              update();
+              break;
+
+            case 'add_link' :
+              // find index of nodes with source_id and target_id
+              // add link using indexes
+
+              var source_index = -1, target_index = -1;
+
+              for (var i = 0, len = nodes.length; i < len; i++){
+                if (nodes[i].id == data.source_id) {
+                  source_index = i;
+                }
+                if (nodes[i].id == data.target_id) {
+                  target_index = i;
+                }
+              }
+
+              console.log('LINK:', [data.source_id, data.target_id, source_index, target_index]);
+
+              if (target_index > -1 && source_index > -1) {
+                var linkID = Math.round(Math.random()*Math.pow(10,10));
+
+                links.push({id: linkID, source: source_index, target: target_index});
+
+                // delete linkID link after waiting for 500ms
+                (function(id){
+                  setTimeout(function(){
+                    // delete link       
+                    for (var i = 0, len = links.length; i < len; i++){
+                      if (links[i].id == id) {
+                        links.splice(i, 1);
+                        update();
+                        break;
+                      }
+                    }
+                  }, 2500);
+                })(linkID);
+
+                update();
+              //  $("."+linkID).fadeOut(2500);
+              }
+              break;
+          }
+        }
+      });
+    </script>
+    <h3 id="title">title</h3>
+  </body>
+</html>
