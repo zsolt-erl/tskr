@@ -1,6 +1,7 @@
 defmodule Tskr.Store do
   use GenServer
   require Logger
+  alias Tskr.RedixPool
 
   #############################################################################
   # server client
@@ -124,7 +125,6 @@ defmodule Tskr.Store do
             case Kernel.apply op, [gr | args] do
               {:error, err} ->
                 Logger.error "Update result: #{inspect err}"
-                IO.inspect( :digraph.vertices gr )
                 err
               result ->
                 Logger.debug "Update result: #{inspect result}"

@@ -8,6 +8,8 @@ defmodule Tsk.Rebooter do
     #IO.puts "Number of pools: #{inspect length(Enum.to_list(cursor))}"
 
     psel = Tsk.new code: Tsk.Poolselector
+    
+    IO.puts "#{__MODULE__} finished"
 
     [
       Tsk.del(myself),

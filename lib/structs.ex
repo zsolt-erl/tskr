@@ -1,13 +1,40 @@
 defmodule Tsk do
   import UUID
+  alias Tskr.RedixPool
 
   defp defaultTsk, do: %{name: String.to_atom(UUID.uuid4), code: nil}
 
   def new(fieldUpdates), do: Enum.into(fieldUpdates, defaultTsk)
 
   # execute tsk operations on a graph
-  def doAdd(graph, tsk), do: :digraph.add_vertex graph, tsk.name, tsk
-  def doDel(graph, tsk), do: :digraph.del_vertex graph, tsk.name
+  def doAdd(graph, tsk) do
+    :digraph.add_vertex graph, tsk.name, tsk
+
+    {:ok, guicmd} = JSON.encode([
+      cmd: :create_node,
+      node: [id: tsk.name, label: tsk.code]])
+    
+    Tskr.RedixPool.command ~w(PUBLISH broadcast_channel #{guicmd}) 
+    # {
+    # cmd: create_node,
+    # node: {id: <any>}
+    # }
+  end
+
+  def doDel(graph, tsk) do
+    :digraph.del_vertex graph, tsk.name
+    
+    {:ok, guicmd} = JSON.encode([
+      cmd: :delete_node,
+      id: tsk.name])
+    
+    Tskr.RedixPool.command ~w(PUBLISH broadcast_channel #{guicmd}) 
+    # {
+    # cmd: delete_node,
+    # id: <any>
+    # }
+  end
+
   def doUpdate(graph, tsk, changes) do
     # changes is a keyword list
     new_tsk = 
@@ -32,7 +59,22 @@ defmodule Edge do
 
   def new(fieldUpdates), do: Enum.into(fieldUpdates, defaultEdge)
 
-  def doAdd(graph, edge), do: :digraph.add_edge graph, edge.name, edge.source, edge.target, edge 
+  def doAdd(graph, edge) do
+    :digraph.add_edge graph, edge.name, edge.source, edge.target, edge 
+    
+    {:ok, guicmd} = JSON.encode([
+      cmd: :add_link,
+      source_id: edge.source,
+      target_id: edge.target])
+    
+    Tskr.RedixPool.command ~w(PUBLISH broadcast_channel #{guicmd}) 
+    # {
+    # cmd: add_link,
+    # source_id: <any>,
+    # target_id: <any>
+    # }
+  end
+
   def doDel(graph, edge), do: :digraph.del_edge graph, edge.name 
   def doUpdate(graph, edge, changes) do
     # changes is a keyword list

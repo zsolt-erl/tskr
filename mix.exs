@@ -31,7 +31,9 @@ defmodule Tskr.Mixfile do
     [
       {:poolboy, "~> 1.5"},
       {:uuid, "~> 1.1"},
-      {:mongodb, "~> 0.1.0"}
+      {:mongodb, "~> 0.1.0"},
+      {:redix, ">= 0.0.0"},
+      {:json, "~> 0.3.0"}
     ]
   end
 end

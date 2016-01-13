@@ -37,7 +37,6 @@ defmodule Tskr.Runner do
     graph_updates = List.flatten( (taskStruct.code).run graph, taskStruct, inputs, outputs )
 
     Logger.warn "Finished Task: #{inspect taskname} | results:\n"
-    Enum.each graph_updates, &IO.inspect/1
 
     Tskr.Store.update graph_updates
 

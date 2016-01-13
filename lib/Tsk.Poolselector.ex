@@ -7,16 +7,16 @@ defmodule Tsk.Poolselector do
   initialize the task, get list of pools from the db
   """
   def run(_graph, myself, [%{value: :go}] = inputs, _outputs) do
-    Logger.warn "Poolselector first time run!"
+    IO.puts "..#{__MODULE__} started"
 
     # get pool names from db
     # query =%{"startNodeName" => %{"$regex" => "G_qa.qa1s1..*"}, "relation" => "member", "endNodeName" => %{"$regex" => "G_qa.qa1s1..*"}}
     query =%{"startNodeName" => %{"$regex" => "G_qa.qa1s1..*"}, "relation" => "member", "endNodeName" => %{"$regex" => "^((?!^G_).)*$" }}
     cursor = Mongo.distinct MongoPool, "edges", "startNodeName", query, limit: 3
     # poolnames = cursor |> Enum.map( fn(edge) -> edge["endNodeName"] end )
-    poolnames = Enum.slice cursor, 0..2
+    poolnames = Enum.slice cursor, 0..20
 
-    Logger.warn "Poolnames: #{inspect poolnames}"
+    IO.puts "..#{__MODULE__} poolnames: #{inspect poolnames}"
 
     hostsel = Tsk.new code: Tsk.Hostselector
 
@@ -51,6 +51,7 @@ defmodule Tsk.Poolselector do
 
     case remaining_pools do
       [] ->
+        IO.puts "..#{__MODULE__} finished"
         # we are done, update output
         outputs |> Edge.updates(value: :done)
 

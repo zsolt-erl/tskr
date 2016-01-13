@@ -7,7 +7,8 @@ defmodule Tsk.Hostselector do
   initialize the task, get list of hosts from the db
   """
   def run(_graph, myself, [%{value: {:go, poolname}}] = inputs, _outputs) do
-    Logger.warn "Hostselector initialization, poolname: #{poolname}"
+    IO.puts "....#{__MODULE__} started"
+    IO.puts "....#{__MODULE__} init:: poolname: #{poolname}"
 
     # get host names from db
     hostnames = Mongo.find(
@@ -21,7 +22,7 @@ defmodule Tsk.Hostselector do
       x -> trunc(x)
     end
 
-    Logger.warn "Hostnames: #{inspect hostnames}, max_executors: #{inspect max_executors}"
+    IO.puts "....#{__MODULE__} init:: hostnames: #{inspect hostnames}, max_executors: #{inspect max_executors}"
     {hosts_doing, hosts_todo} = Enum.split hostnames, max_executors
 
     # create executors
@@ -71,6 +72,7 @@ defmodule Tsk.Hostselector do
           # step 3: check if we are fully done
           {doing3, todo3, update3} = 
             if doing2 == [] and todo2 == [] do
+              IO.puts "....#{__MODULE__} finished"
               nupdate = update2 ++ (outputs |> Edge.updates(value: {:done, myself.poolname}))
               {doing2, todo2, nupdate}
             else
@@ -104,6 +106,7 @@ defmodule Tsk.Hostselector do
           # step 3: check if we are fully done
           {doing3, todo3, maxe3, update3} = 
             if doing2 == [] and todo2 == [] do
+              IO.puts "....#{__MODULE__} finished"
               nupdate = update2 ++ (outputs |> Edge.updates(value: {:done, myself.poolname}))
               {doing2, todo2, maxe2, nupdate}
             else

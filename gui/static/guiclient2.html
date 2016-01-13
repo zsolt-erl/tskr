@@ -1,11 +1,12 @@
 <!DOCTYPE html>
-<html>
-
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
   <style>
 
     .link {
       stroke: #000;
       stroke-width: 1.5px;
+      marker-end: url(#end-arrow);
     }
 
     .node {
@@ -18,9 +19,8 @@
       font: bold 22px sans-serif;
       fill: #000;
     }
-
   </style>
-
+</head>
 
   <body>
     <script src="/static/sockjs.min.js"></script>
@@ -172,20 +172,6 @@
                 var linkID = Math.round(Math.random()*Math.pow(10,10));
 
                 links.push({id: linkID, source: source_index, target: target_index});
-
-                // delete linkID link after waiting for 500ms
-                (function(id){
-                  setTimeout(function(){
-                    // delete link       
-                    for (var i = 0, len = links.length; i < len; i++){
-                      if (links[i].id == id) {
-                        links.splice(i, 1);
-                        update();
-                        break;
-                      }
-                    }
-                  }, 2500);
-                })(linkID);
 
                 update();
               //  $("."+linkID).fadeOut(2500);

@@ -1,8 +1,9 @@
-#! /usr/bin/python
+#! /usr/local/bin/python
 # -*- coding: utf-8 -*-
 
 import sys
- 
+import json
+
 import tornado.ioloop
 import tornado.web
 
@@ -12,7 +13,7 @@ import sockjs.tornado
 
 import logging
 logging.getLogger().setLevel(logging.DEBUG)
- 
+
 
 class RedisMessageHandler(sockjs.tornado.SockJSConnection):
     """
@@ -24,7 +25,7 @@ class RedisMessageHandler(sockjs.tornado.SockJSConnection):
 
     def on_open(self, request):
         subscriber.subscribe(['broadcast_channel'], self)
-        # self.send(json.dumps({'type': 'cmd', 'msg': 'hello leo', 'user': 'aaa'}))
+        self.send(json.dumps({'type': 'cmd', 'msg': 'hello leo', 'user': 'aaa'}))
 
     def on_close(self):
        subscriber.unsubscribe('broadcast_channel', self)
@@ -41,4 +42,4 @@ if __name__ == "__main__":
     app = tornado.web.Application(redishandler + statichandler, **settings)
     app.listen(8888)
     tornado.ioloop.IOLoop.instance().start()
-    
+
