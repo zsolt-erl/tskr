@@ -33,7 +33,8 @@ defmodule Tskr.Mixfile do
       {:uuid, "~> 1.1"},
       {:mongodb, "~> 0.1.0"},
       {:redix, ">= 0.0.0"},
-      {:json, "~> 0.3.0"}
+      {:json, "~> 0.3.0"},
+      {:erlsh, "~> 0.1.0"}
     ]
   end
 end
